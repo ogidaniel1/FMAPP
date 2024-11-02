@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Farmers</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            margin-top: 20px;
+        }
+        .table th, .table td {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">All {{farmers|length}} Farmers</h1>
+        
+        {% if farmers %}
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Farm Location</th>
+                        <th>Date of Birth</th>
+                        <th>Gender</th>
+                        <th>Phone Number</th>
+                        <th>BVN Number</th>
+                        <th>ID Card Type</th>
+                        <th>ID Card Number</th>
+                        <th>Farm Size</th>
+                        <th>GPS Coordinates</th>
+                        <th>Created by</th>
+                        <th>Updated by</th>
+                        <th>Created at</th>
+                        <th>Updated at</th>
+                        <th>Photo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for farmer in farmers %}
+                        <tr>
+                            <td>{{ farmer.id }}</td>
+                            <td>{{ farmer.email }}</td>
+                            <td>{{ farmer.farmer_firstname }}</td>
+                            <td>{{ farmer.farmer_lastname }}</td>
+                            <td>{{ farmer.farm_location }}</td>
+                            <td>{{ farmer.date_of_birth.strftime('%m/%d/%Y') }}</td>
+                            <td>{{ farmer.farmer_gender }}</td>
+                            <td>{{ farmer.phone_number }}</td>
+                            <td>{{ farmer.bvn_number }}</td>
+                            <td>{{ farmer.id_card_type }}</td>
+                            <td>{{ farmer.id_card_number }}</td>
+                            <td>{{ farmer.farm_size }}</td>
+                            <td>{{ farmer.gps_coordinates }}</td>
+                            
+                            <td>
+                                {% if farmer.created_by_admin %}
+                                    {{ farmer.created_by_admin.email }}
+                                {% elif farmer.created_by_app_admin %}
+                                    {{ farmer.created_by_app_admin.email }}
+                                {% else %}
+                                    - (Created by System) -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if farmer.updated_by_admin %}
+                                    {{ farmer.updated_by_admin.email }}
+                                {% elif farmer.updated_by_app_admin %}
+                                    {{ farmer.updated_by_app_admin.email }}
+                                {% elif farmer.updated_by_farmer %}
+                                    {{ farmer.farmer.email }} (Farmer) - Self Update
+                                {% else %}
+                                    - (Not Updated Yet) -
+                                {% endif %}
+
+
+                            <td>{{ farmer.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>{{ farmer.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>{{ farmer.passport_photo }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="text-center">No farmers found in the database.</p>
+        {% endif %}
+
+        <a href="{{ url_for('app_admin_dashboard') }}" class="btn btn-primary mt-4">Back to Dashboard</a>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

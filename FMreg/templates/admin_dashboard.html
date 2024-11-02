@@ -1,0 +1,104 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    {% endfor %}
+{% endif %}
+{% endwith %}
+
+
+<div class="row">
+    <div class="col-md-4">
+        <!-- Search Admins Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                Search Farmers
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('search_farmer') }}">
+                    <div class="mb-3">
+                        <label for="farmerSearch" class="form-label">Farmer Email or Name</label>
+                        <input type="text" class="form-control" id="farmerSearch" name="farmer_search" placeholder="Enter farmer email or name">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+
+<!-- Display Farmer Search Results -->
+{% if farmer_results %}
+    <h3>Farmer Search Results ({{farmer_results|length}} matches)</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>BVN</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for farmer in farmer_results %}
+            <tr>
+                <td>{{ farmer.farmer_firstname }}</td>
+                <td>{{ farmer.farmer_lastname }}</td>
+                <td>{{ farmer.email }}</td>
+                <td>{{ farmer.phone_number }}</td>
+                <td>{{ farmer.bvn_number }}</td>
+                <td>
+                <div class="text-center">
+                    <a href="{{ url_for('view_farmers', farmer_id=farmer.id) }}" class="btn btn-secondary btn-sm">View</a>
+                    <a href="{{ url_for('farmer_dashboard', farmer_id=farmer.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                    <button class="btn btn-sm btn-danger" onclick="deleteFarmer('{{ farmer.id }}')">Delete</button>
+                </div>
+            </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
+<script>
+    function deleteFarmer(farmerId) {
+        if (confirm('Are you sure you want to delete this farmer?')) {
+            fetch(`/delete_farmer/${farmerId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload(); // Reload to see the changes
+                } else {
+                    alert('Failed to delete the farmer.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the farmer.');
+            });
+        }
+    }
+</script>
+
+{% endblock %}

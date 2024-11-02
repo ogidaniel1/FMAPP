@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Farmer Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center">Edit Farmer Data</h1>
+    
+<!--     
+    <p>Hello, current role: {{ current_user.role }}</p>
+    <p>Hi, current user ID: {{ current_user.id }}</p>
+    <p>Hey, farmer ID: {{ farmer.id }}</p> -->
+
+
+    <!-- Flash messages for form errors -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="mt-3">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">×</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Farmer Edit Form -->
+    <form method="POST" action="{{ url_for('farmer_dashboard', farmer_id=farmer.id) }}" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <div class="row">
+            <!-- Avatar Section -->
+            <div class="col-md-4 text-center">
+                <div class="form-group">
+                    <div class="image-container">
+                        <!-- Display current passport photo or a placeholder -->
+                             <img src="{% if farmer.passport_photo %}
+                             {{ url_for('static', filename='uploads/' + farmer.passport_photo) }}
+                             {% else %}
+                             {{ url_for('static', filename='uploads/default_avatar.png') }}
+                             {% endif %}"
+                             alt="Default Avatar" class="avatar mb-3" id="avatarPreview">
+                             
+                        <!-- Overlay Text -->
+                        <div class="overlay-text">Click to change</div>
+
+                        <!-- Passport photo upload input (hidden) -->
+                        {{ form.passport_photo(class="form-control-file", id="avatarUpload", onchange="previewAvatar(event)", accept="image/*", style="display:none") }}
+                    </div>
+
+                    <!-- Display errors if any -->
+                    {% if form.passport_photo.errors %}
+                    <div class="text-danger">
+                        {% for error in form.passport_photo.errors %}
+                        <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Form Fields Section -->
+            <div class="col-md-8">
+                <!-- Personal Information -->
+                <div class="form-section">
+                    <h4>Personal Information</h4>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.farmer_firstname.label(class="form-control-label") }}
+                            {{ form.farmer_firstname(class="form-control", required=True) }}
+                        </div>
+                        <div class="form-group col-md-6">
+                            {{ form.farmer_lastname.label(class="form-control-label") }}
+                            {{ form.farmer_lastname(class="form-control", required=True) }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.email.label(class="form-control-label") }}
+                            {{ form.email(class="form-control", required=True) }}
+                        </div>
+                        <div class="form-group col-md-6">
+                            {{ form.phone_number.label(class="form-control-label") }}
+                            {{ form.phone_number(class="form-control", required=True, pattern="^\+234\d{10}$|^0\d{10}$", title="Phone number must start with '+234' or '0' followed by 10 digits.") }}
+                            {% if form.phone_number.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.phone_number.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Farm Information -->
+                <div class="form-section">
+                    <h4>Farm Information</h4>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.farm_location.label(class="form-control-label") }}
+                            {{ form.farm_location(class="form-control", required=True) }}
+                        </div>
+                        <div class="form-group col-md-6">
+                            {{ form.farm_size.label(class="form-control-label") }}
+                            {{ form.farm_size(class="form-control", required=True) }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.gps_coordinates.label(class="form-control-label") }}
+                            {{ form.gps_coordinates(class="form-control") }}
+                        </div>
+                        <div class="form-group col-md-6">
+                            {{ form.farm_size.label(class="form-control-label") }}
+                            {{ form.farm_size(class="form-control", required=True) }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Identification -->
+                <div class="form-section">
+                    <h4>Identification</h4>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.id_card_type.label(class="form-control-label") }}
+                            {{ form.id_card_type(class="form-control") }}
+                        </div>
+                        <div class="form-group col-md-6">
+                            {{ form.id_card_number.label(class="form-control-label") }}
+                            {{ form.id_card_number(class="form-control") }}
+                        </div>
+                        <div class="form-group col-md-6">
+                            {{ form.bvn_number.label(class="form-control-label") }}
+                            {{ form.bvn_number(class="form-control", required=True, pattern="\d{11}", inputmode="numeric", title="Please enter a valid 11-digit BVN") }}
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit and Preview Buttons -->
+        <div class="text-center mt-4">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('view_farmers', farmer_id=farmer.id) }}" class="btn btn-info ml-3">Preview</a>
+        </div>
+    </form>
+   
+</div>
+ 
+<!-- Bootstrap JS and dependencies -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<!-- Avatar Preview Script -->
+<script>
+    // When avatar image is clicked, trigger the hidden file input
+    document.getElementById('avatarPreview').addEventListener('click', function() {
+        document.getElementById('avatarUpload').click();  // Simulates a click on the hidden file input
+    });
+
+    // document.getElementById('phone_number').addEventListener('input', function() {
+    // let phoneInput = this.value;
+    
+    // // Automatically add +234 if the number starts with 0
+    // if (phoneInput.startsWith('0')) {
+    //     this.value = '+234' + phoneInput.slice(1);
+    // }
+    // });
+
+    function previewAvatar(event) {
+        const reader = new FileReader();
+        reader.onload = function() {
+            const output = document.getElementById('avatarPreview');
+            output.src = reader.result;
+        };
+        reader.readAsDataURL(event.target.files[0]); // Update the src of the image with the selected file
+    }
+
+</script>
+
+{% endblock %}

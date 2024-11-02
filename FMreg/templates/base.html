@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- CSRF Token Meta Tag -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}FARMER MANAGEMENT SYSTEM Dashboard{% endblock %}</title>
+
+
+    <!-- Bootstrap CSS -->
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            margin-top: 20px;
+        }
+        
+        .form-section {
+            margin-bottom: 20px;
+        }
+
+    .image-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .avatar {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        cursor: pointer;
+    }
+
+    .overlay-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 5px;
+        border-radius: 5px;
+        font-size: 12px;
+        display: none;
+    }
+
+    .image-container:hover .overlay-text {
+        display: block;
+    }
+
+    </style>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            margin-top: 20px;
+        }
+
+        .avatar {
+            width: 200px;
+            /* Increase size */
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #ddd;
+            /* Add border for emphasis */
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+        }
+
+        .form-control-plaintext {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+
+
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% block head %}{% endblock %}
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">FMAPP Dashboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Search Admins</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Search Farmers</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Upload Files</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{url_for('logout')}}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add CSRF token to AJAX requests
+        document.addEventListener('DOMContentLoaded', function () {
+            var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            var headers = new Headers({
+                'X-CSRFToken': csrfToken
+            });
+
+            // Example of how to add CSRF token to fetch requests
+            function fetchWithCSRF(url, options) {
+                options = options || {};
+                options.headers = options.headers || {};
+                options.headers['X-CSRFToken'] = csrfToken;
+                return fetch(url, options);
+            }
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+      {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+      {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="login-container">
+    <h2>Login</h2>
+    <form action="{{ url_for('login') }}" method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label for="email_or_phone">Email or Phone Number</label>
+            {{ form.email_or_phone(class_='form-control', placeholder='Enter your email or phone number') }}
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            {{ form.password(class_='form-control', placeholder='Enter your password') }}
+        </div>
+
+        <div class="form-group form-check">
+            {{ form.remember_me(class_='form-check-input') }}
+            <label class="form-check-label" for="remember_me">Remember Me</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Login</button>
+
+        <div class="forgot-password mt-2">
+            <a href="#">Forgot Password?</a>
+        </div>
+
+        <div class="signup-link">
+            Don't have an account? <a href="{{ url_for('add_farmer') }}">Sign up here</a>.
+        </div>
+    </form>
+</div>
+{% endblock %}

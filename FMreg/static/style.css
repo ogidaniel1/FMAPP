@@ -1,0 +1,25 @@
+/* Custom styles for the upload button */
+.upload-btn {
+    background-color: #28a745; /* Bootstrap success green */
+    border: 1px solid #28a745; /* Border color matching the button */
+    color: white;              /* White text */
+    padding: 10px 20px;        /* Padding for the button */
+    font-size: 16px;           /* Font size */
+    border-radius: 5px;        /* Rounded corners */
+    transition: background-color 0.3s, border-color 0.3s; /* Smooth transition */
+}
+
+.upload-btn:hover {
+    background-color: #218838; /* Darker green for hover effect */
+    border-color: #1e7e34;     /* Darker border on hover */
+}
+
+/* Add some shadow to the card */
+.card.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Adjust the file input and label */
+.form-control-file {
+    border-radius: 0; /* Remove rounded corners for file input */
+}

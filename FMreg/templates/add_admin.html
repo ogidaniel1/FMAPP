@@ -1,0 +1,115 @@
+<{% extends "base.html" %}
+{% block title %}Register Admin{% endblock %}
+{% block content %}
+
+<style>
+    .header-light-green {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .btn-custom-green {
+        background-color: #28a745 !important;
+        color: white !important;
+    }
+
+    .btn-custom-green:hover {
+        background-color: #218838 !important;
+        color: white !important;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header header-light-green text-center">
+                    <h2>Add Admin</h2>
+                </div>
+                <div class="card-body">
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+                    <form method="POST" action="{{ url_for('add_admin') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="form-group">
+                            <label for="admin_name">Name</label>
+                            {{ form.admin_name(class="form-control") }}
+                            {% if form.admin_name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.admin_name.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="phone_number">Phone Number</label>
+                            {{ form.phone_number(class="form-control") }}
+                            {% if form.phone_number.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.phone_number.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            {{ form.email(class="form-control") }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.email.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            {{ form.password(class="form-control") }}
+                            {% if form.password.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.password.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm_password">Confirm Password</label>
+                            {{ form.Hash_password(class="form-control") }}
+                            {% if form.Hash_password.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.Hash_password.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <p></p>
+                        <div class="text-center">
+                            {{ form.submit(class="btn btn-custom-green") }}
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+>
