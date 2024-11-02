@@ -105,35 +105,27 @@ def create_default_admin():
 
 
 ##############################################
-# session_dir = './flask_sessions/'
+session_dir = './flask_sessions/'
 
-# for file in os.listdir(session_dir):
-#     file_path = os.path.join(session_dir, file)
-#     os.remove(file_path)
-
-
+for file in os.listdir(session_dir):
+    file_path = os.path.join(session_dir, file)
+    os.remove(file_path)
 
 #######################################
 
 
-
 @login_manager.user_loader
 def load_user(user_id):
-    try:
-        user_type, uuid_str, = user_id.split("_")
-        # Convert string back to UUID
-        user_uuid = uuid.UUID(uuid_str)
-        if user_type == 'app_admin':
-            return AppAdmin.query.get(user_uuid)
-        elif user_type == 'admin':
-            return Admin.query.get(user_uuid)
-        elif user_type == 'farmer':
-            return Farmer.query.get(user_uuid)
-
-    except (ValueError, AttributeError) as e:
-        # Handle invalid UUIDs gracefully
-        print(f"Error loading user with ID {user_id}: {e}")
-        return None
+    user_type, id_str = user_id.split("_")
+    
+    if user_type == "farmer":
+        return Farmer.query.get(UUID(id_str))  # Convert to UUID if necessary
+    elif user_type == "admin":
+        return Admin.query.get(UUID(id_str))
+    elif user_type == "app_admin":
+        return AppAdmin.query.get(UUID(id_str))
+    
+    return None
 
 #############################################################
 
@@ -147,6 +139,35 @@ def load_user(user_id):
 #             return f(*args, **kwargs)
 #         return decorated_function
 #     return decorator
+
+def app_admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if the current user is an Admin or AppAdmin
+        if not isinstance(current_user, AppAdmin):
+            abort(403)  # Forbidden access
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def admin_or_app_admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if the current user is an Admin or AppAdmin
+        if not (isinstance(current_user, Admin) or isinstance(current_user, AppAdmin)):
+            abort(403)  # Forbidden access
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def all_users_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if the user is authenticated
+        if not current_user.is_authenticated:
+            abort(403)  # Forbidden access
+        return f(*args, **kwargs)
+    return decorated_function
 
 ############################################################
 #...............flask_form...........................................
@@ -291,9 +312,7 @@ class Farmer(UserMixin, db.Model):
 
     # Primary key using UUID
     serial_number = db.Column(db.Integer, unique=True, nullable=False)
-    # id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    id = db.Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), unique=True, nullable=False)
-    # id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # Basic Information
     email = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=True)
@@ -363,8 +382,7 @@ class Admin(UserMixin, db.Model):
     # Primary key using UUID
     serial_number = db.Column(db.Integer, unique=True, nullable=False)
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    # id = db.Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), unique=True, nullable=False)
-   
+    
     # Basic Information
     email = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
@@ -401,8 +419,7 @@ class AppAdmin(UserMixin, db.Model):
     # Primary key using UUID
     serial_number = db.Column(db.Integer, nullable=False)
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    # id = db.Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), unique=True, nullable=False)
-   
+    
     # Basic Information
     email = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
@@ -1221,10 +1238,10 @@ def search_farmer():
 
 #dashboard for all the 3 users.....................#####
 @app.route('/app_admin/dashboard')
-@role_required('app_admin')
+@app_admin_required
 def app_admin_dashboard():
 
-    # app.logger.warning('Current user: %s', current_user)
+    app.logger.warning('Current user: %s', current_user)
     app.logger.warning("Session user data:", session.get("user"))
    
     # Initialize forms
