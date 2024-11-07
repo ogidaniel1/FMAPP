@@ -30,8 +30,8 @@
 
     <!-- Farmer Edit Form -->
     <form method="POST" action="{{ url_for('farmer_dashboard', farmer_id=farmer.id) }}" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}
         <div class="row">
+            {{ form.hidden_tag() }}
             <!-- Avatar Section -->
             <div class="col-md-4 text-center">
                 <div class="form-group">

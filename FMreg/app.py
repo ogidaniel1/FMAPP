@@ -61,12 +61,13 @@ app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
 app.config['WTF_CSRF_ENABLED']= True
 
 
-app.config['SESSION_TYPE'] = 'filesystem'  # Or 'sqlalchemy' for database session
-app.config['SESSION_FILE_DIR'] = './flask_sessions/'  # Ensure this path exists
-app.config['SESSION_PERMANENT'] = False  # Set to false if you don't want sessions to persist forever
+# Session(app)  # Initialize server-side sessions
 
+# Session configuration
+app.config['SESSION_TYPE'] = 'null'  # Use null to avoid creating files for the session
+app.config['SESSION_PERMANENT'] = True  # Make sessions permanent so they last for a set time
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)  # Set session to last 1 hour
 
-Session(app)  # Initialize server-side sessions
 
 csrf = CSRFProtect(app)
 db = SQLAlchemy(app)
@@ -119,12 +120,15 @@ def load_user(user_id):
     user_type, id_str = user_id.split("_")
     
     if user_type == "farmer":
-        return Farmer.query.get(UUID(id_str))  # Convert to UUID if necessary
+        print("you got here so what is the issue?", id_str, Farmer.query.filter_by(id=uuid.UUID(id_str)).first())
+        return Farmer.query.get(uuid.UUID(id_str))  # Convert to UUID if necessary
     elif user_type == "admin":
-        return Admin.query.get(UUID(id_str))
-    elif user_type == "app_admin":
-        return AppAdmin.query.get(UUID(id_str))
+        return Admin.query.get(uuid.UUID(id_str))
+    elif user_type == "app-admin":
+        print('app admin', AppAdmin.query.get(uuid.UUID(id_str)))
+        return AppAdmin.query.get(uuid.UUID(id_str))
     
+    print("User not found")
     return None
 
 #############################################################
@@ -173,6 +177,7 @@ def all_users_required(f):
 #...............flask_form...........................................
 class LoginForm(FlaskForm):
     email_or_phone = StringField('Email or Phone Number', validators=[DataRequired()])
+    bvn_number = StringField('bvn_number')
 
     def validate_email(self, field):
         value = field.data
@@ -312,7 +317,7 @@ class Farmer(UserMixin, db.Model):
 
     # Primary key using UUID
     serial_number = db.Column(db.Integer, unique=True, nullable=False)
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # Basic Information
     email = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=True)
@@ -418,7 +423,7 @@ class AppAdmin(UserMixin, db.Model):
     
     # Primary key using UUID
     serial_number = db.Column(db.Integer, nullable=False)
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
     # Basic Information
     email = db.Column(db.String(150), unique=True, nullable=False)
@@ -446,7 +451,7 @@ class AppAdmin(UserMixin, db.Model):
     )
 
     def get_id(self):
-        return f'app_admin_{self.id}'
+        return f'app-admin_{self.id}'
 
 
 class ActionLog(db.Model):
@@ -485,41 +490,55 @@ def login():
         password = form.password.data
 
         # Try user login based on email or phone number
+        # Determine user by email or phone
         user = None
         if "@" in email_or_phone:
-            user = Farmer.query.filter_by(email=email_or_phone).first() or \
-                   Admin.query.filter_by(email=email_or_phone).first()  or \
-                   AppAdmin.query.filter_by(email=email_or_phone).first()
+            user = (Farmer.query.filter_by(email=email_or_phone).first() or
+                    Admin.query.filter_by(email=email_or_phone).first() or
+                    AppAdmin.query.filter_by(email=email_or_phone).first())
         else:
-            user = Farmer.query.filter_by(email=email_or_phone).first() or \
-                   Admin.query.filter_by(email=email_or_phone).first()  or \
-                   AppAdmin.query.filter_by(email=email_or_phone).first()
+            user = (Farmer.query.filter_by(phone_number=email_or_phone).first() or
+                    Admin.query.filter_by(phone_number=email_or_phone).first() or
+                    AppAdmin.query.filter_by(phone_number=email_or_phone).first())
+
+            
+         # Check if the user is a farmer and if the provided BVN matches
+        # Authenticate user
+        if user:
+            if isinstance(user, Farmer):
+                # Treat password input as BVN for Farmers
+                if user.bvn_number == password:
+                    login_user(user)
+                    session['user'] = user.id
+                    session['role'] = 'farmer'
+                    flash('Login successful as farmer!', 'success')
+                    return redirect(url_for('farmer_dashboard', farmer_id=str(user.id)))
+                else:
+                    flash('Invalid BVN for Farmer.', 'danger')
        
         # Check login credentials if user found
-        if user and check_password_hash(user.password, password):
-            login_user(user)
-            session['user'] = user.id  # Store user ID in session
-            session['role'] = 'app_admin' if isinstance(user, AppAdmin) else 'admin' if isinstance(user, Admin) else 'farmer'
-            flash(f'Login successful as {session["role"]}!', 'success')
+        # Authenticate Admin or AppAdmin with password
+            elif check_password_hash(user.password, password):
+                login_user(user)
+                session['user'] = user.id
+                session['role'] = 'app_admin' if isinstance(user, AppAdmin) else 'admin'
+                flash(f'Login successful as {session["role"]}!', 'success')
 
-            # Redirect based on user role
-            if isinstance(user, AppAdmin):
-                # app.logger.warning('this app_admin user', session['_user_id'])
-                return redirect(url_for('app_admin_dashboard'))
-            elif isinstance(user, Admin):
-                return redirect(url_for('admin_dashboard'))
-            elif isinstance(user, Farmer):
-                return redirect(url_for('farmer_dashboard', farmer_id=str(user.id)))
+                # Redirect based on user role
+                if isinstance(user, AppAdmin):
+                    return redirect(url_for('app_admin_dashboard'))
+                elif isinstance(user, Admin):
+                    return redirect(url_for('admin_dashboard'))
             else:
-                flash('Invalid user role', 'danger')
+                # Incorrect password for Admin/AppAdmin
+                flash('Invalid password for Admin or AppAdmin.', 'danger')
                 return render_template('login.html', form=form)
-
         else:
-            flash('Invalid email, phone number, or password', 'danger')
+            # User not found
+            flash('Invalid email or phone number.', 'danger')
             return render_template('login.html', form=form)
 
     return render_template('login.html', form=form)
-
 
 
 # Ensure to configure your upload folder in app config
@@ -727,8 +746,8 @@ def upload_farmers_file():
 @login_required
 def farmer_upload_results():
 
-    # if not isinstance(current_user, AppAdmin):
-    #     abort(403)  # Forbidden for non-Admins and non-AppAdmins
+    if not isinstance(current_user, AppAdmin):
+        abort(403)  # Forbidden for non-Admins and non-AppAdmins
  
     """
     Displays the results of the farmer file upload, including successes, duplicates, and errors.
@@ -780,7 +799,7 @@ def farmer_upload_results():
 
 #add a farmer
 @app.route('/add_farmer', methods=['GET', 'POST'])
-@login_required
+# @login_required
 def add_farmer():
 
     filepath = None  # Initialize filepath to None
@@ -923,12 +942,12 @@ def add_admin():
  #editing a farmer
  ####.................barley lord of moriah...................#########
 
-@app.route('/farmer/dashboard/<int:farmer_id>', methods=['GET', 'POST'])
+@app.route('/farmer/dashboard/<farmer_id>', methods=['GET', 'POST'])
 @login_required
 def farmer_dashboard(farmer_id):
 
      #---- Fetch farmer and perform access control ----
-    farmer = Farmer.query.get_or_404(farmer_id)
+    farmer = Farmer.query.get_or_404(uuid.UUID(farmer_id))
 
     # Check access control based on user role and farmer ID
     if current_user.role == 'farmer':
@@ -971,7 +990,7 @@ def farmer_dashboard(farmer_id):
         update_farmer_details(current_user, farmer, form)
 
         # Fetch the last serial number
-        last_serial = db.session.query(func.max(Farmer.serial_number)).scalar() or 0
+        last_serial = db.session.query(func.max(ActionLog.serial_number)).scalar() or 0
 
         try:
             db.session.commit()
@@ -992,6 +1011,10 @@ def farmer_dashboard(farmer_id):
 
             flash('Farmer details updated successfully!', 'success')
             return redirect(url_for('farmer_dashboard', farmer_id=farmer.id))
+        
+        except IntegrityError as e:
+            db.session.rollback()
+            flash(f'Error updating farmer details: IntegrityError: {str(e)}', 'danger')
         except Exception as e:
             db.session.rollback()
             flash(f'Error updating farmer details: {str(e)}', 'danger')
@@ -1030,24 +1053,23 @@ def update_farmer_details(user, farmer, form):
 
 ###################....................................#####################
 
-@app.route('/admin/<int:admin_id>')
+@app.route('/admin/<string:admin_id>')
 
 def view_admin(admin_id):
     
-    admin = Admin.query.get_or_404(admin_id)
+    admin = Admin.query.get_or_404(uuid.UUID(admin_id))
     #  users = User.query.all()
     return render_template('view_admin.html', admin=admin)
 
-
 ########################################################################
 #............edit admin............#######
-@app.route('/edit_admin/<int:admin_id>', methods=['GET', 'POST'])
+@app.route('/edit_admin/<string:admin_id>', methods=['GET', 'POST'])
 @login_required
 def edit_admin(admin_id):
 
     form = AdminForm()
     
-    admin = Admin.query.get_or_404(admin_id)
+    admin = Admin.query.get_or_404(uuid.UUID(admin_id))
 
     # if not isinstance(current_user, AppAdmin):
         # abort(403)  # Only Admins and AppAdmins can edit farmers
@@ -1071,20 +1093,16 @@ def edit_admin(admin_id):
     
     return render_template('edit_admin.html', admin=admin, form=form)
 
-
 #####################################################################
 
-@app.route('/delete_admin/<int:admin_id>', methods=['POST'])
+@app.route('/delete_admin/<admin_id>', methods=['POST'])
 @login_required
 def delete_admin(admin_id):
-    admin = Admin.query.get_or_404(admin_id)
 
-    # if not isinstance(current_user, AppAdmin):
-    #     abort(403)  # Forbidden for non-Admins and non-AppAdmins
+    admin = Admin.query.get_or_404(uuid.UUID(str(admin_id)))
 
-    # # Only allow AppAdmin users to perform this action
-    # if current_user.role != 'app_admin':
-    #     abort(403)  # Access forbidden if not app_admin
+    if not isinstance(current_user, AppAdmin):
+        abort(403)  # Forbidden for non-Admins and non-AppAdmins
     
     # Fetch the last serial number
     last_serial = db.session.query(func.max(ActionLog.serial_number)).scalar() or 0
@@ -1117,16 +1135,17 @@ def delete_admin(admin_id):
 
 
 #delete farmer
-@app.route('/delete_farmer/<int:farmer_id>', methods=['POST'])
+@app.route('/delete_farmer/<farmer_id>', methods=['POST'])
 @login_required
 def delete_farmer(farmer_id):
-    farmer = Farmer.query.get_or_404(farmer_id)
+
+    farmer = Farmer.query.get_or_404(uuid.UUID(str(farmer_id)))
 
     # if not isinstance(current_user, Admin) and not isinstance(current_user, AppAdmin):
     #     abort(403)  # Only Admins and AppAdmins can delete farmers
 
     # Fetch the last serial number
-    last_serial = db.session.query(func.max(Farmer.serial_number)).scalar() or 0
+    last_serial = db.session.query(func.max(ActionLog.serial_number)).scalar() or 0
 
     # Attempt to delete the farmer
     try:
@@ -1298,7 +1317,7 @@ def app_admin_dashboard():
 
 
 @app.route('/admin/dashboard')
-# @login_required
+@login_required
 def admin_dashboard():
 
     if not isinstance(current_user, Admin) | isinstance(current_user, AppAdmin):
@@ -1307,18 +1326,19 @@ def admin_dashboard():
     return render_template('admin_dashboard.html')
 
 
-
 ######........................................................###
 #########..........view all farmers and admin.............#######
 
-@app.route('/preview_farmers/<int:farmer_id>', methods=['GET'])
-# @login_required
+@app.route('/preview_farmers/<farmer_id>', methods=['GET'])
+@login_required
+
 def view_farmers(farmer_id=None):
     form = FarmerForm()
 
     # If a specific farmer_id is provided, fetch the corresponding farmer
     if farmer_id:
-        farmer = Farmer.query.get(farmer_id)
+
+        farmer = Farmer.query.get(uuid.UUID(str(farmer_id)))
         if not farmer:
             abort(404)  # Farmer not found
         return render_template('preview_farmer.html', form=form, farmer=farmer)
